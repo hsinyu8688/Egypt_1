@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>埃及 尼羅河女團</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff7ed;
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #fcd34d; border-radius: 10px; }
+
+        .phrase-card:active { transform: scale(0.98); }
+        .itinerary-card { transition: all 0.2s; }
+        .itinerary-card:active { transform: scale(0.99); }
+
+        /* Hide scrollbar for tab container */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==============================
+        // 1. 靜態資料定義
+        // ==============================
+        
+        const keywordEmojis = {
+            '火鍋': '🍲', '晚餐': '🍽️', '午餐': '🥪', '早午餐': '🍳', '吃飯': '🍴', '老魚': '🐟', '用餐': '🍽️',
+            '飛機': '✈️', '航班': '✈️', '機場': '🛫', 'T1': '✈️', 'T2': '✈️', 'T3': '✈️',
+            '路克索': '🛕', 
+            '博物館': '🏛️', '神殿': '🏛️', '神廟': '🏛️', '金字塔': '🔺',
+            '市集': '🛍️', '購物': '🛍️',
+            '住宿': '🏨', '飯店': '🏨', 'Hotel': '🏨', 'Resort': '🏖️', '入住': '🏨',
+            '熱氣球': '🎈', '風帆船': '⛵', '搭船': '⛵',
+            '沙漠': '🌵', '衝沙': '🚙', '駱駝': '🐪',
+            '潛水': '🤿', '浮潛': '🤿', '海': '🌊', '深潛': '🤿',
+            '西奈山': '⛰️', '登山': '🥾',
+            '開羅': '🏙️', '老城': '🕌', '清真寺': '🕌'
+        };
+
+        const arabicPhrases = [
+            { category: "打招呼", meaning: "你好", original: "Salam Alaikum", phonetic: "薩拉姆 阿萊庫姆" },
+            { category: "禮貌", meaning: "謝謝", original: "Shukran", phonetic: "休克蘭" },
+            { category: "禮貌", meaning: "不客氣", original: "Afwan", phonetic: "阿夫萬" },
+            { category: "禮貌", meaning: "是 / 對", original: "Aywa", phonetic: "艾瓦" },
+            { category: "禮貌", meaning: "不", original: "La", phonetic: "拉" },
+            { category: "禮貌", meaning: "不好意思", original: "Ma'lish", phonetic: "罵力許" },
+            { category: "禮貌", meaning: "再見", original: "Ma'a salama", phonetic: "瑪薩拉瑪" },
+            { category: "殺價", meaning: "多少錢？", original: "Bekam?", phonetic: "畢卡姆？" },
+            { category: "殺價", meaning: "太貴了！", original: "Ghali awi", phonetic: "加利 阿維" },
+            { category: "殺價", meaning: "我不要", original: "La Shukran", phonetic: "拉 休克蘭" },
+            { category: "殺價", meaning: "走開", original: "Imshi", phonetic: "音許！" },
+            { category: "殺價", meaning: "夠了", original: "Khalas", phonetic: "哈拉斯" },
+            { category: "生活", meaning: "水", original: "Mayya", phonetic: "瑪雅" },
+            { category: "生活", meaning: "廁所", original: "Hamam", phonetic: "哈媽媽" },
+            { category: "生活", meaning: "趕快 / 走了", original: "Yalla", phonetic: "雅拉" },
+            { category: "生活", meaning: "警察", original: "Bolice", phonetic: "波利斯" }
+        ];
+
+        const arabicNumbers = [
+            { num: "0", arabNum: "٠", phonetic: "希夫爾" },
+            { num: "1", arabNum: "١", phonetic: "瓦黑德" },
+            { num: "2", arabNum: "٢", phonetic: "耶特寧" },
+            { num: "3", arabNum: "٣", phonetic: "塔拉塔" },
+            { num: "4", arabNum: "٤", phonetic: "阿爾巴" },
+            { num: "5", arabNum: "٥", phonetic: "杭撒" },
+            { num: "6", arabNum: "٦", phonetic: "塞塔" },
+            { num: "7", arabNum: "٧", phonetic: "薩巴" },
+            { num: "8", arabNum: "٨", phonetic: "塔曼亞" },
+            { num: "9", arabNum: "٩", phonetic: "鐵薩" },
+            { num: "10", arabNum: "١٠", phonetic: "阿沙拉" },
+            { num: "50", arabNum: "٥٠", phonetic: "杭信" },
+            { num: "100", arabNum: "١٠٠", phonetic: "梅亞" }
+        ];
+
+        // 注意事項資料
+        const importantNotes = [
+            { title: "簽證與入境", content: "落地簽需準備 25 美金（不找零，建議準備剛好）。" },
+            { title: "網路與通訊", content: "建議先買好 E-SIM 或抵達機場辦理網卡（Orange/Vodafone）。" },
+            { title: "飲水安全", content: "絕對不可生飲自來水！請購買礦泉水，刷牙也建議用礦泉水。" },
+            { title: "小費文化 (Baksheesh)", content: "上廁所、提行李都需要小費，建議隨身攜帶小額埃鎊（5、10、20 LE）。" },
+            { title: "穿著建議", content: "早晚溫差大，洋蔥式穿搭。參觀清真寺需穿長褲/長裙，女性需備頭巾。" },
+            { title: "殺價技巧", content: "市集購物從 3-4 折開始殺，堅持底線，不想買就直接走開 (Yalla!)。" },
+            { title: "電壓插座", content: "220V，雙圓孔插座 (歐規 C 型或 F 型)。" },
+             { title: "防曬保濕", content: "沙漠氣候極乾燥，務必攜帶保濕用品、護唇膏、墨鏡、防曬乳。" }
+        ];
+
+        const initialItineraryData = [
+            // 12/12
+            { day: "12/12", location: "松山", mapUrl: "https://www.google.com/maps/search/?api=1&query=台北松山機場", activity: "18:05 台北松山機場 T1 報到", notes: "航班 3U3982", timestamp: 1 },
+            { day: "12/12", location: "成都天府國際機場 T1", mapUrl: "https://www.google.com/maps/search/?api=1&query=成都天府國際機場", activity: "21:45 抵達成都", notes: "轉機等候", timestamp: 2 },
+            { day: "12/12", location: "東部蜀韻火鍋(天府機場旗艦店)", mapUrl: "https://www.google.com/maps/search/?api=1&query=東部蜀韻火鍋+天府機場", activity: "22:30 宵夜/用餐", notes: "飞机到达后 找到T2的22号门/T1的13号门，等司机来接就行啦。", timestamp: 3 }, 
+            // 12/13
+            { day: "12/13", location: "成都天府國際機場 T1", mapUrl: "https://www.google.com/maps/search/?api=1&query=成都天府國際機場", activity: "01:45 轉機/出發", notes: "航班 3U3863", timestamp: 4 },
+            { day: "12/13", location: "開羅國際機場 T2", mapUrl: "https://www.google.com/maps/search/?api=1&query=Cairo+International+Airport+Terminal+2", activity: "06:45 抵達開羅", notes: "入境與海關", timestamp: 5 },
+            { day: "12/13", location: "Seyid Efendi Hotel", mapUrl: "https://www.google.com/maps/search/?api=1&query=Seyid+Efendi+Hotel+Cairo", activity: "08:00 入住/放行李", notes: "房費 US$125.99", timestamp: 6 },
+            { day: "12/13", location: "OLDISH", mapUrl: "https://maps.app.goo.gl/3Wr6svtHCe17wKug9", activity: "08:30 早午餐", notes: "", timestamp: 7 },
+            { day: "12/13", location: "開羅老城 (集合點: KFC Tahrir)", mapUrl: "https://www.google.com/maps/search/?api=1&query=KFC+Tahrir+Square", activity: "09:30 Free Walking Tour", notes: "集合點: KFC Tahrir square 前", timestamp: 8 },
+            { day: "12/13", location: "Zamalek City Walk", mapUrl: "https://www.google.com/maps/search/?api=1&query=Zamalek+Cairo", activity: "14:00 城市漫步", notes: "", timestamp: 9 },
+            { day: "12/13", location: "Ibn Hamido Seafood / Saheb El Sa'ada", mapUrl: "https://www.google.com/maps/search/?api=1&query=Ibn+Hamido+Seafood+Cairo", activity: "18:00 晚餐", notes: "", timestamp: 10 },
+            // 12/14
+            { day: "12/14", location: "Spire West Hotel", mapUrl: "https://www.google.com/maps/search/?api=1&query=Spire+West+Hotel+Cairo", activity: "10:00 去Spire West Hotel 會合", notes: "", timestamp: 11 },
+            { day: "12/14", location: "Spire West Hotel", mapUrl: "https://www.google.com/maps/search/?api=1&query=Spire+West+Hotel+Cairo", activity: "11:00 住宿: Spire West Hotel", notes: "", timestamp: 12 },
+            { day: "12/14", location: "午餐", mapUrl: "", activity: "12:00 午餐", notes: "", timestamp: 13 },
+            { day: "12/14", location: "大埃及博物館", mapUrl: "https://www.google.com/maps/search/?api=1&query=Grand+Egyptian+Museum", activity: "14:00 午後參觀大埃及博物館", notes: "", timestamp: 14 },
+            { day: "12/14", location: "MUZZI 大街", mapUrl: "https://www.google.com/maps/search/?api=1&query=Al+Muizz+Street+Cairo", activity: "16:30 漫步 MUZZI 大街感受埃及老城", notes: "", timestamp: 15 },
+            { day: "12/14", location: "哈利利市集", mapUrl: "https://www.google.com/maps/search/?api=1&query=Khan+el-Khalili", activity: "18:00 哈利利市集", notes: "", timestamp: 16 },
+            // 12/15
+            { day: "12/15", location: "吉薩金字塔群 & 人面獅身像", mapUrl: "https://www.google.com/maps/search/?api=1&query=Giza+Necropolis", activity: "07:30 出發參觀金字塔", notes: "", timestamp: 17 },
+            { day: "12/15", location: "前往機場 (飛往盧克索)", mapUrl: "https://www.google.com/maps/search/?api=1&query=Cairo+International+Airport", activity: "12:30 前往機場", notes: "預計逛 3.5 小時後 出發", timestamp: 18 },
+            { day: "12/15", location: "盧克索機場/風帆船", mapUrl: "https://www.google.com/maps/search/?api=1&query=Luxor+International+Airport", activity: "17:15 抵達盧克索", notes: "如趕上日落可搭乘風帆船。", timestamp: 19 },
+            { day: "12/15", location: "Iberotal Luxor", mapUrl: "https://www.google.com/maps/search/?api=1&query=Iberotel+Luxor", activity: "19:00 晚餐/住宿", notes: "", timestamp: 20 },
+            { day: "12/15", location: "路克索神殿", mapUrl: "https://www.google.com/maps/search/?api=1&query=Luxor+Temple", activity: "20:00 晚飯後自由活動", notes: "可自由選擇前往。唯㇐夜間有打燈光秀，可在外面拍照不會收門票費。", timestamp: 21 },
+            // 12/16
+            { day: "12/16", location: "熱氣球 (西岸/帝王谷/哈布城)", mapUrl: "https://www.google.com/maps/search/?api=1&query=Valley+of+the+Kings", activity: "04:30 熱氣球", notes: "乘坐熱氣球(自費 60$)，結束後參觀曼儂雕像、帝王谷、哈布城。", timestamp: 22 },
+            { day: "12/16", location: "卡納克神廟 Temple of Karnak", mapUrl: "https://www.google.com/maps/search/?api=1&query=Karnak+Temple", activity: "12:00 回東岸繼續參觀", notes: "參觀卡納克神廟", timestamp: 23 },
+            { day: "12/16", location: "阿斯旺 (Aswan)", mapUrl: "https://www.google.com/maps/search/?api=1&query=Aswan", activity: "14:00 午餐後前往阿斯旺", notes: "車程約 4~4.5 小時", timestamp: 24 },
+            { day: "12/16", location: "HAPI HOTEL", mapUrl: "https://www.google.com/maps/search/?api=1&query=Hapi+Hotel+Aswan", activity: "18:30 住宿: HAPI HOTEL (暫定)", notes: "", timestamp: 25 },
+            // 12/17
+            { day: "12/17", location: "阿布辛貝神殿", mapUrl: "https://www.google.com/maps/search/?api=1&query=Abu+Simbel+Temples", activity: "03:00 出發至阿布辛貝神殿", notes: "車程約 4~4.5 小時。參觀完畢後返回阿斯旺吃午餐。", timestamp: 26 },
+            { day: "12/17", location: "菲萊神廟", mapUrl: "https://www.google.com/maps/search/?api=1&query=Philae+Temple", activity: "14:00 參觀菲萊神廟", notes: "尼羅河上的埃及珍珠。如 12/15 沒遇上日落，可於今天補風帆船。", timestamp: 27 },
+            { day: "12/17", location: "Sayed Effendi Boutique Hotel", mapUrl: "https://www.google.com/maps/search/?api=1&query=Seyid+Efendi+Hotel+Cairo", activity: "20:00 晚餐後飛返開羅", notes: "住宿: Sayed Effendi Boutique Hotel", timestamp: 28 },
+            // 12/18
+            { day: "12/18", location: "Almaza Airport", mapUrl: "https://www.google.com/maps/search/?api=1&query=Almaza+Air+Base", activity: "07:00 出發至軍用機場 Almaza Airport", notes: "搭乘 9:00 am 軍機前往錫瓦(SIWA)。軍機行李限重: 20公斤。", timestamp: 29 },
+            { day: "12/18", location: "Siwa Oasis / 沙利堡壘", mapUrl: "https://www.google.com/maps/search/?api=1&query=Shali+Fortress+Siwa", activity: "10:30 抵達 Siwa Oasis / 參觀沙利堡壘", notes: "刺客教條拍攝地。入住 Cafour House Siwa / Hot spring。", timestamp: 30 },
+            { day: "12/18", location: "Cleopatra’s Spring", mapUrl: "https://www.google.com/maps/search/?api=1&query=Cleopatra+Spring+Siwa", activity: "14:00 下午參觀 Cleopatra’s Spring", notes: "中餐(ABDU)、逛逛市集。噴泉行程請攜帶泳衣。", timestamp: 31 },
+            { day: "12/18", location: "Fetnas 島", mapUrl: "https://www.google.com/maps/search/?api=1&query=Fatnas+Island+Siwa", activity: "17:00 前往 Fetnas 島看日落", notes: "結束後在民宿吃晚餐", timestamp: 32 },
+            // 12/19
+            { day: "12/19", location: "阿蒙神諭神殿 / 夢幻鹽湖", mapUrl: "https://www.google.com/maps/search/?api=1&query=Temple+of+the+Oracle+of+Amun", activity: "09:00 參觀神殿與古老墓穴、鹽湖", notes: "中午返回市區吃中餐(ABDU 或其他)。鹽湖下水拍照裝備及毛巾，衝沙建議穿褲裝。", timestamp: 33 },
+            { day: "12/19", location: "錫瓦沙漠", mapUrl: "https://www.google.com/maps/search/?api=1&query=Siwa+Oasis", activity: "14:00 沙漠衝沙、滑沙、夕陽", notes: "越野車衝沙、衝浪板滑沙、沙丘欣賞夕陽。晚上在沙漠篝火吃晚餐(烤雞)。", timestamp: 34 },
+            { day: "12/19", location: "夜巴 (往開羅)", mapUrl: "", activity: "22:00 搭夜巴回開羅", notes: "結束後返回民宿洗澡並前往搭夜巴。晚上十點開到早上十點到開羅。", timestamp: 35 },
+            // 12/20
+            { day: "12/20", location: "開羅", mapUrl: "https://www.google.com/maps/search/?api=1&query=Cairo", activity: "09:00 抵達開羅機場", notes: "", timestamp: 36 },
+            { day: "12/20", location: "沙姆沙伊赫 (Sharm El Sheikh)", mapUrl: "https://www.google.com/maps/search/?api=1&query=Sharm+El-Sheikh+International+Airport", activity: "13:45 抵達沙姆沙伊赫", notes: "搭乘中午的班機。入住 Sunrise Diamond Beach Resort (三餐飲料全包)。", timestamp: 37 },
+            { day: "12/20", location: "Farsha Mountain Lounge", mapUrl: "https://www.google.com/maps/search/?api=1&query=Farsha+Cafe", activity: "16:00 Farsha 懸崖酒吧吃飯", notes: "員旅贊助餐。晚上前往當地家樂福或市集採買逛街。", timestamp: 38 },
+            // 12/21
+            { day: "12/21", location: "Ras Mohammed Reserve", mapUrl: "https://www.google.com/maps/search/?api=1&query=Ras+Mohammed+National+Park", activity: "07:50 深潛 pick up", notes: "deep diving swimming,lunch,drinks,Ras Mohammed Reserve", timestamp: 39 },
+            { day: "12/21", location: "Ras Mohammed Reserve", mapUrl: "https://www.google.com/maps/search/?api=1&query=Ras+Mohammed+National+Park", activity: "16:30 返回", notes: "", timestamp: 40 },
+            { day: "12/21", location: "西奈山 (Mt. Sinai)", mapUrl: "https://www.google.com/maps/search/?api=1&query=Mount+Sinai", activity: "20:00 晚上自費行程: 西奈山登山", notes: "20:00 出發，02:30 抵達登山口。登山 3 小時，05:00 看日出。下山參觀聖母修道院，預計隔日下午 14:00 抵達沙姆。", timestamp: 41 },
+            // 12/22
+            { day: "12/22", location: "Sunrise Diamond Beach Resort", mapUrl: "https://www.google.com/maps/search/?api=1&query=Sunrise+Diamond+Beach+Resort", activity: "09:00 早上享用飯店設施", notes: "", timestamp: 42 },
+            { day: "12/22", location: "前往機場", mapUrl: "https://www.google.com/maps/search/?api=1&query=Sharm+El-Sheikh+International+Airport", activity: "18:30 飛往開羅", notes: "前往沙姆沙伊赫機場", timestamp: 43 },
+            { day: "12/22", location: "Logistics-5-stars", mapUrl: "https://www.google.com/maps/search/?api=1&query=Logistics-5-stars+Cairo", activity: "21:00 住宿: Logistics-5-stars", notes: "", timestamp: 44 },
+            // 12/23
+            { day: "12/23", location: "開羅國際機場 T2", mapUrl: "https://www.google.com/maps/search/?api=1&query=Cairo+International+Airport+Terminal+2", activity: "13:55 開羅開羅國際機場 T2 EY714", notes: "", timestamp: 45 },
+            { day: "12/23", location: "阿布扎比國際機場 A", mapUrl: "https://www.google.com/maps/search/?api=1&query=Zayed+International+Airport+Terminal+A", activity: "19:15 阿布達比阿布扎比國際機場 A", notes: "", timestamp: 46 },
+            { day: "12/23", location: "阿布扎比國際機場 A", mapUrl: "https://www.google.com/maps/search/?api=1&query=Zayed+International+Airport+Terminal+A", activity: "21:25 阿布達比阿布扎比國際機場 A EY898", notes: "", timestamp: 47 },
+            // 12/24
+            { day: "12/24", location: "台灣桃園國際機場 T2", mapUrl: "https://www.google.com/maps/search/?api=1&query=Taiwan+Taoyuan+International+Airport+Terminal+2", activity: "09:00 台灣桃園台灣桃園國際機場 T2", notes: "", timestamp: 48 },
+        ];
+
+        const initialPacking = [
+            { group: "重要物品", text: "護照及信用卡", checked: false },
+            { group: "重要物品", text: "台胞證", checked: false }, 
+            { group: "重要物品", text: "美金 (另備乾淨無摺痕25美金申請簽證)", checked: false },
+            { group: "重要物品", text: "2吋白底照片*2張", checked: false },
+            { group: "重要物品", text: "歐規插頭轉換器、電壓轉換器", checked: false },
+            { group: "電子用品", text: "手機充電線", checked: false },
+            { group: "電子用品", text: "取卡針", checked: false },
+            { group: "電子用品", text: "行動電源、耳機", checked: false },
+            { group: "電子用品", text: "隨身小風扇 (非充電式請記得攜帶電池)", checked: false },
+            { group: "藥品", text: "過敏藥、暈車/船藥、薄荷油", checked: false },
+            { group: "藥品", text: "胃藥、止瀉藥、感冒藥", checked: false },
+            { group: "藥品", text: "個人常用藥/保健食品", checked: false },
+            { group: "藥品", text: "眼藥水", checked: false },
+            { group: "個人物品", text: "U型頸枕 (車程長會需要)", checked: false },
+            { group: "個人物品", text: "牙膏、牙刷、梳子 (飯店不提供)", checked: false },
+            { group: "個人物品", text: "保養品、面膜、洗護髮及卸妝用品", checked: false },
+            { group: "個人物品", text: "好走的鞋、涼鞋、拖鞋 (飯店通常不提供)", checked: false },
+            { group: "個人物品", text: "泳衣、防水袋、浮潛用具 (依個人需求)", checked: false },
+            { group: "個人物品", text: "個人衣物(套*天數)、外套、圍巾、手套", checked: false },
+            { group: "個人物品", text: "濕紙巾、面紙", checked: false },
+            { group: "個人物品", text: "吉隆坡網卡E-SIM", checked: false }, 
+            { group: "個人物品", text: "防曬衣物、墨鏡、遮陽帽/傘、口罩", checked: false },
+            { group: "額外建議", text: "免洗內衣褲", checked: false },
+            { group: "額外建議", text: "拋棄式枕頭套、毛巾", checked: false },
+            { group: "額外建議", text: "拋棄式馬桶坐墊", checked: false },
+            { group: "額外建議", text: "洗臉巾", checked: false },
+            { group: "額外建議", text: "吹風機", checked: false },
+            { group: "額外建議", text: "熱水瓶、電子鍋 (國際電壓)", checked: false },
+            { group: "額外建議", text: "糧食、泡麵(碗)-避免包裝上有「豬肉」圖案", checked: false },
+            { group: "額外建議", text: "免洗餐具", checked: false },
+            { group: "額外建議", text: "手機掛繩", checked: false }
+        ];
+
+        // ==============================
+        // 2. React Component (主程式)
+        // ==============================
+
+        const App = () => {
+            const [view, setView] = useState('itinerary');
+            const [packingList, setPackingList] = useState([]);
+            const [expandedDays, setExpandedDays] = useState({});
+            
+            // 初始化：從 LocalStorage 讀取 (完全離線版)
+            useEffect(() => {
+                const savedList = localStorage.getItem('egypt_packing_offline_v12');
+                if (savedList) {
+                    setPackingList(JSON.parse(savedList));
+                } else {
+                    // 產生全新的物件陣列
+                    setPackingList(initialPacking.map(item => ({...item})));
+                }
+            }, []);
+
+            const togglePackingItem = (index) => {
+                setPackingList(prevList => {
+                    const newList = prevList.map((item, i) => 
+                        i === index ? { ...item, checked: !item.checked } : item
+                    );
+                    localStorage.setItem('egypt_packing_offline_v12', JSON.stringify(newList));
+                    return newList;
+                });
+            };
+            
+            const resetData = () => {
+                if(!confirm("確定要重置所有勾選狀態嗎？")) return;
+                // 從原始資料產生一份全新的清單
+                const freshList = initialPacking.map(item => ({...item, checked: false}));
+                setPackingList(freshList);
+                localStorage.setItem('egypt_packing_offline_v12', JSON.stringify(freshList));
+                alert("已重置！");
+            };
+
+            const toggleDay = (day) => {
+                setExpandedDays(prev => ({
+                    ...prev,
+                    [day]: !prev[day]
+                }));
+            };
+
+            // Helper functions for render
+            const getSummaryText = (items) => {
+                 const summaryItems = items.filter(item => {
+                    const loc = item.location.toLowerCase();
+                    const act = item.activity.toLowerCase();
+                    
+                    // 排除住宿
+                    if (loc.includes('hotel') || loc.includes('resort') || loc.includes('住宿') || loc.includes('入住')) {
+                         if (items.length > 2) return false;
+                    }
+                    // 排除純用餐
+                    if ((loc === '午餐' || loc === '晚餐' || act === '午餐' || act === '晚餐')) {
+                         if (!loc.includes('前往') && !act.includes('前往')) return false;
+                    }
+                    // 排除機場移動 (12/15 需求)
+                    if (loc.includes('前往機場') || act.includes('前往機場') || act.includes('飛往') || act.includes('搭乘')) return false;
+
+                    return true;
+                });
+
+                return summaryItems.map(i => {
+                    let name = i.location;
+                    for (const [key, emoji] of Object.entries(keywordEmojis)) {
+                        if (name.includes(key) || i.activity.includes(key)) {
+                            if (!name.includes(emoji)) name = emoji + ' ' + name;
+                            break; 
+                        }
+                    }
+                    return name.replace(/\(.*\)/, '').replace(/（.*）/, '').trim(); 
+                }).join(' ➔ ');
+            };
+
+            window.switchView = setView;
+
+            // Group Itinerary
+            const groupedItinerary = initialItineraryData.reduce((acc, item) => {
+                (acc[item.day] = acc[item.day] || []).push(item);
+                return acc;
+            }, {});
+
+            // Group Packing
+            const groupedPacking = packingList.reduce((acc, item) => {
+                 (acc[item.group] = acc[item.group] || []).push(item);
+                 return acc;
+            }, {});
+
+            return (
+                <div className="pb-24">
+                     {/* Sticky Header */}
+                     <div className="sticky top-0 z-50 bg-[#fff7ed]">
+                        <div className="bg-white/90 backdrop-blur-md shadow-sm p-4 mb-4 rounded-b-2xl border-b border-amber-100">
+                            <h1 className="text-2xl font-bold text-center text-amber-800 tracking-tight mb-1">🐪 埃及 尼羅河女團</h1>
+                            <p className="text-center text-amber-600/70 text-xs mb-3">12/12 - 12/24</p>
+                            
+                            {/* Navigation Tabs */}
+                            <div className="flex justify-center space-x-2 no-scrollbar overflow-x-auto">
+                                <button 
+                                    onClick={() => setView('itinerary')} 
+                                    className={`tab-button ${view === 'itinerary' ? 'tab-active' : 'tab-inactive'}`}>
+                                    📅 行程總覽
+                                </button>
+                                <button 
+                                    onClick={() => setView('packing')} 
+                                    className={`tab-button ${view === 'packing' ? 'tab-active' : 'tab-inactive'}`}>
+                                    🎒 行李清單
+                                </button>
+                                <button 
+                                    onClick={() => setView('arabic')} 
+                                    className={`tab-button ${view === 'arabic' ? 'tab-active' : 'tab-inactive'}`}>
+                                    🗣️ 空耳阿拉伯語
+                                </button>
+                                <button 
+                                    onClick={() => setView('notes')} 
+                                    className={`tab-button ${view === 'notes' ? 'tab-active' : 'tab-inactive'}`}>
+                                    ⚠️ 注意事項
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="max-w-2xl mx-auto px-4">
+                        {/* ITINERARY VIEW */}
+                        {view === 'itinerary' && (
+                             <div className="space-y-4">
+                                {Object.entries(groupedItinerary).map(([day, items]) => {
+                                    const summaryText = getSummaryText(items);
+                                    const isExpanded = expandedDays[day];
+                                    
+                                    // 只有純數字日期
+                                    let dateNum = day.split('/')[1];
+                                    if(!dateNum) dateNum = "";
+
+                                    return (
+                                        <div key={day} className="mb-4 bg-white rounded-xl shadow-sm border-l-4 border-amber-400 overflow-hidden itinerary-card">
+                                            <div className="p-4 cursor-pointer bg-white hover:bg-amber-50 transition-colors flex flex-col"
+                                                 onClick={() => toggleDay(day)}>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <div className="flex items-center">
+                                                        {/* Custom Calendar Icon */}
+                                                        <div className="bg-white border-2 border-amber-400 rounded-lg w-10 h-10 flex flex-col items-center justify-center shadow-sm mr-3 flex-shrink-0">
+                                                            <span className="text-[0.5rem] font-bold text-white bg-amber-400 w-full text-center leading-tight rounded-t-sm">12月</span>
+                                                            <span className="text-lg font-extrabold text-amber-800 leading-none pt-0.5">{dateNum}</span>
+                                                        </div>
+                                                    </div>
+                                                    <span className={`text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isExpanded ? 'text-white bg-amber-400' : 'text-amber-400 bg-amber-50'}`}>
+                                                        {isExpanded ? '–' : '+'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-500 leading-relaxed block w-full break-words pl-1 border-l-2 border-gray-100 ml-1">
+                                                    {summaryText}
+                                                </span>
+                                            </div>
+                                            
+                                            {isExpanded && (
+                                                <div className="px-4 pb-4 space-y-3 border-t border-gray-100 pt-3 bg-gray-50/50 item-details visible-details">
+                                                    {items.map((item, idx) => (
+                                                        <div key={idx} className="flex flex-col bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="flex-1">
+                                                                    <p className="text-lg font-bold text-gray-800 mb-1">{item.activity}</p>
+                                                                    {item.mapUrl ? (
+                                                                        <a href={item.mapUrl} target="_blank" className="text-sm text-amber-600 hover:text-amber-800 hover:underline flex items-center gap-1 font-medium">
+                                                                            📍 {item.location}
+                                                                        </a>
+                                                                    ) : (
+                                                                        <span className="text-sm text-gray-500 flex items-center gap-1">📍 {item.location}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {item.notes && <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">{item.notes}</div>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                             </div>
+                        )}
+
+                        {/* PACKING LIST VIEW */}
+                        {view === 'packing' && (
+                            <div className="space-y-4 animate-fade-in">
+                                {Object.entries(groupedPacking).map(([group, items]) => (
+                                    <div key={group} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                        <h3 className="bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 border-b border-amber-100">
+                                            🎒 {group}
+                                        </h3>
+                                        <div className="divide-y divide-gray-50">
+                                            {items.map((item) => {
+                                                // Find correct index in main list using direct comparison
+                                                const originalIndex = packingList.findIndex(p => p.group === item.group && p.text === item.text);
+                                                return (
+                                                    <div key={item.text + originalIndex} 
+                                                         onClick={() => togglePackingItem(originalIndex)}
+                                                         className="flex items-center p-3 hover:bg-gray-50 cursor-pointer transition-colors">
+                                                        <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 flex-shrink-0 ${item.checked ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300'}`}>
+                                                            {item.checked && '✓'}
+                                                        </div>
+                                                        <span className={`text-sm ${item.checked ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                                                            {item.text}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="text-center pt-4 pb-8">
+                                    <button onClick={resetData} className="text-sm text-gray-500 underline hover:text-amber-600">重置所有勾選</button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ARABIC VIEW */}
+                        {view === 'arabic' && (
+                             <div className="space-y-6 animate-fade-in">
+                                 <div>
+                                    <h3 className="text-lg font-bold text-amber-800 mb-3 flex items-center"><span className="bg-amber-100 p-1 rounded mr-2">🔢</span> 數字對照</h3>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                        {arabicNumbers.map((n, i) => (
+                                            <div key={i} className="bg-white p-2 rounded-lg shadow-sm border border-gray-100 text-center flex flex-col items-center justify-center h-20 phrase-card">
+                                                <div className="text-lg font-bold text-gray-400 leading-none">{n.num}</div>
+                                                <div className="text-2xl font-bold text-amber-600 font-serif leading-none my-1">{n.arabNum}</div>
+                                                <div className="text-xs text-gray-500 bg-gray-50 px-2 rounded-full">{n.phonetic}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                 </div>
+                                 <hr className="border-amber-200/50"/>
+                                 <div>
+                                    <h3 className="text-lg font-bold text-amber-800 mb-3 flex items-center"><span className="bg-amber-100 p-1 rounded mr-2">🇪🇬</span> 生活用語</h3>
+                                    <div className="grid grid-cols-1 gap-3">
+                                         {arabicPhrases.map((p, i) => (
+                                            <div key={i} className="bg-white p-3 rounded-lg shadow-sm border-l-4 border-amber-400 flex justify-between items-center phrase-card">
+                                                <div>
+                                                    <div className="text-xs text-amber-600 font-bold mb-0.5">{p.category}</div>
+                                                    <div className="text-base font-bold text-gray-800">{p.phonetic}</div>
+                                                    <div className="text-xs text-gray-400">{p.original}</div>
+                                                </div>
+                                                <div className="text-sm font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">
+                                                    {p.meaning}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                 </div>
+                             </div>
+                        )}
+                        
+                        {/* NOTES VIEW */}
+                        {view === 'notes' && (
+                             <div className="space-y-4 animate-fade-in">
+                                 {importantNotes.map((note, i) => (
+                                     <div key={i} className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-400">
+                                         <h3 className="font-bold text-lg text-red-800 mb-1">{note.title}</h3>
+                                         <p className="text-sm text-gray-600 leading-relaxed">{note.content}</p>
+                                     </div>
+                                 ))}
+                                 <div className="text-center text-xs text-gray-400 mt-4">
+                                     安全第一，開心出遊！ 🐫
+                                 </div>
+                             </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

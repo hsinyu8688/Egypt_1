@@ -17,12 +17,18 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap'); /* 引入阿拉伯語字體 */
         
         body {
             font-family: 'Inter', sans-serif;
             background-color: #fff7ed;
             -webkit-tap-highlight-color: transparent;
             padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Arabic Font Class */
+        .font-arabic {
+            font-family: 'Amiri', serif;
         }
         
         /* Custom Scrollbar */
@@ -39,8 +45,8 @@
             display: none;
         }
         .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
     </style>
 </head>
@@ -70,22 +76,23 @@
         };
 
         const arabicPhrases = [
-            { category: "打招呼", meaning: "你好", original: "Salam Alaikum", phonetic: "薩拉姆 阿萊庫姆" },
-            { category: "禮貌", meaning: "謝謝", original: "Shukran", phonetic: "休克蘭" },
-            { category: "禮貌", meaning: "不客氣", original: "Afwan", phonetic: "阿夫萬" },
-            { category: "禮貌", meaning: "是 / 對", original: "Aywa", phonetic: "艾瓦" },
-            { category: "禮貌", meaning: "不", original: "La", phonetic: "拉" },
-            { category: "禮貌", meaning: "不好意思", original: "Ma'lish", phonetic: "罵力許" },
-            { category: "禮貌", meaning: "再見", original: "Ma'a salama", phonetic: "瑪薩拉瑪" },
-            { category: "殺價", meaning: "多少錢？", original: "Bekam?", phonetic: "畢卡姆？" },
-            { category: "殺價", meaning: "太貴了！", original: "Ghali awi", phonetic: "加利 阿維" },
-            { category: "殺價", meaning: "我不要", original: "La Shukran", phonetic: "拉 休克蘭" },
-            { category: "殺價", meaning: "走開", original: "Imshi", phonetic: "音許！" },
-            { category: "殺價", meaning: "夠了", original: "Khalas", phonetic: "哈拉斯" },
-            { category: "生活", meaning: "水", original: "Mayya", phonetic: "瑪雅" },
-            { category: "生活", meaning: "廁所", original: "Hamam", phonetic: "哈媽媽" },
-            { category: "生活", meaning: "趕快 / 走了", original: "Yalla", phonetic: "雅拉" },
-            { category: "生活", meaning: "警察", original: "Bolice", phonetic: "波利斯" }
+            { category: "打招呼", meaning: "你好", original: "Salam Alaikum", arabic: "السلام عليكم", phonetic: "薩拉姆 阿萊庫姆" },
+            { category: "禮貌", meaning: "謝謝", original: "Shukran", arabic: "شكراً", phonetic: "休克蘭" },
+            { category: "禮貌", meaning: "不客氣", original: "Afwan", arabic: "عفواً", phonetic: "阿夫萬" },
+            { category: "禮貌", meaning: "是 / 對", original: "Aywa", arabic: "أيوة", phonetic: "艾瓦" },
+            { category: "禮貌", meaning: "不", original: "La", arabic: "لا", phonetic: "拉" },
+            { category: "禮貌", meaning: "不好意思", original: "Ma'lish", arabic: "معلش", phonetic: "罵力許" },
+            { category: "禮貌", meaning: "再見", original: "Ma'a salama", arabic: "مع السلامة", phonetic: "瑪薩拉瑪" },
+            { category: "殺價", meaning: "多少錢？", original: "Bekam?", arabic: "بكام؟", phonetic: "畢卡姆？" },
+            { category: "殺價", meaning: "太貴了！", original: "Ghali awi", arabic: "غالي قوي", phonetic: "加利 阿維" },
+            { category: "殺價", meaning: "算便宜一點？", original: "Rakhees showaya?", arabic: "رخيص شوية؟", phonetic: "拉奇斯 舒威亞？" },
+            { category: "殺價", meaning: "我不要", original: "La Shukran", arabic: "لا شكراً", phonetic: "拉 休克蘭" },
+            { category: "殺價", meaning: "走開", original: "Imshi", arabic: "امشي", phonetic: "音許！" },
+            { category: "殺價", meaning: "夠了", original: "Khalas", arabic: "خلاص", phonetic: "哈拉斯" },
+            { category: "生活", meaning: "水", original: "Mayya", arabic: "مية", phonetic: "瑪雅" },
+            { category: "生活", meaning: "廁所", original: "Hamam", arabic: "حمام", phonetic: "哈媽媽" },
+            { category: "生活", meaning: "趕快 / 走了", original: "Yalla", arabic: "يلا", phonetic: "雅拉" },
+            { category: "生活", meaning: "警察", original: "Bolice", arabic: "بوليس", phonetic: "波利斯" }
         ];
 
         const arabicNumbers = [
@@ -225,12 +232,17 @@
             
             // 初始化：從 LocalStorage 讀取 (完全離線版)
             useEffect(() => {
-                const savedList = localStorage.getItem('egypt_packing_offline_v12');
-                if (savedList) {
-                    setPackingList(JSON.parse(savedList));
-                } else {
-                    // 產生全新的物件陣列
-                    setPackingList(initialPacking.map(item => ({...item})));
+                try {
+                    const savedList = localStorage.getItem('egypt_packing_offline_v12');
+                    if (savedList) {
+                        setPackingList(JSON.parse(savedList));
+                    } else {
+                        // 產生全新的物件陣列
+                        setPackingList(initialPacking.map(item => ({...item})));
+                    }
+                } catch (e) {
+                    console.error("Storage Error", e);
+                    setPackingList(initialPacking);
                 }
             }, []);
 
@@ -458,6 +470,7 @@
                                                 <div>
                                                     <div className="text-xs text-amber-600 font-bold mb-0.5">{p.category}</div>
                                                     <div className="text-base font-bold text-gray-800">{p.phonetic}</div>
+                                                    <div className="text-sm text-gray-600 font-serif my-0.5 font-arabic">{p.arabic}</div>
                                                     <div className="text-xs text-gray-400">{p.original}</div>
                                                 </div>
                                                 <div className="text-sm font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded">
